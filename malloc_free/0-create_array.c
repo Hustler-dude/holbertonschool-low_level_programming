@@ -2,11 +2,11 @@
 #include <stdlib.h>
 
 /**
- * create_array - creates an array of chars
- * @size: size of array
+ * create_array - creates an array of chars and initializes it
+ * @size: size of the array
  * @c: char to initialize with
  *
- * Return: pointer to array, or NULL if fails
+ * Return: pointer to array, or NULL if size is 0 or malloc fails
  */
 char *create_array(unsigned int size, char c)
 {
@@ -15,14 +15,17 @@ char *create_array(unsigned int size, char c)
 
 	if (size == 0)
 		return (NULL);
+
 	arr = malloc(sizeof(char) * size);
 	if (arr == NULL)
 		return (NULL);
+
 	i = 0;
 	while (i < size)
 	{
 		arr[i] = c;
 		i++;
 	}
+
 	return (arr);
 }

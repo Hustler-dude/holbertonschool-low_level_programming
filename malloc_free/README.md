@@ -1,3 +1,3 @@
 # C - malloc, free
 
-0-create_array.c - Create array of chars
+Dynamic memory allocation in C
