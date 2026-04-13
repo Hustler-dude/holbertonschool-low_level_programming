@@ -1,0 +1,5 @@
+*.exe
+*.o
+*.out
+lab
+lab_asan
