@@ -13,36 +13,20 @@ void store_init(store_t *st)
 }
 
 /**
- * node_create - allocates a new list node wrapping a session
- * @s: session to wrap
- *
- * Return: pointer to new node, or NULL on failure
- */
-static node_t *node_create(session_t *s)
-{
-	node_t *n = (node_t *)malloc(sizeof(*n));
-
-	if (!n)
-		return (NULL);
-	n->sess = s;
-	n->next = NULL;
-	return (n);
-}
-
-/**
  * store_add - inserts a session into the store
  * @st: target store
  * @s: session to insert
  *
  * Ownership: store_add always takes ownership of @s.
- * On success: the store owns @s and will free it on delete/destroy.
- * On failure: store_add destroys @s so the caller never leaks it.
+ * On success the store owns @s and frees it on delete/destroy.
+ * On any failure store_add destroys @s so the caller never leaks it.
  *
- * Return: 1 on success, 0 if duplicate id, bad input, or allocation failure
+ * Return: 1 on success, 0 on duplicate id, bad input, or allocation failure
  */
 int store_add(store_t *st, session_t *s)
 {
-	node_t *n, *cur;
+	node_t *n;
+	node_t *cur;
 
 	if (!st || !s || !s->id)
 	{
@@ -56,21 +40,19 @@ int store_add(store_t *st, session_t *s)
 		if (cur->sess && cur->sess->id &&
 			strcmp(cur->sess->id, s->id) == 0)
 		{
-			/* Duplicate: caller cannot store this session — destroy it */
 			session_destroy(s);
 			return (0);
 		}
 		cur = cur->next;
 	}
 
-	n = node_create(s);
+	n = (node_t *)malloc(sizeof(*n));
 	if (!n)
 	{
-		/* Node allocation failed — destroy session to avoid orphan */
 		session_destroy(s);
 		return (0);
 	}
-
+	n->sess = s;
 	n->next = st->head;
 	st->head = n;
 	return (1);
@@ -105,21 +87,21 @@ session_t *store_get(store_t *st, const char *id)
  * store_delete - removes a session from the store by id
  * @st: store to modify
  * @id: session identifier
- * @out: if non-NULL, ownership of the session is transferred to the caller;
+ * @out: if non-NULL, ownership is transferred to caller;
  *       if NULL, the session is destroyed by this function
  *
  * Return: 1 if deleted, 0 if not found
  */
 int store_delete(store_t *st, const char *id, session_t **out)
 {
-	node_t *cur, *prev;
+	node_t *cur;
+	node_t *prev;
 
 	if (!st || !id)
 		return (0);
 
 	prev = NULL;
 	cur = st->head;
-
 	while (cur)
 	{
 		if (cur->sess && cur->sess->id &&
@@ -131,10 +113,8 @@ int store_delete(store_t *st, const char *id, session_t **out)
 				st->head = cur->next;
 
 			if (out)
-				/* Transfer ownership: caller is responsible for freeing */
 				*out = cur->sess;
 			else
-				/* No receiver: destroy now to avoid leak */
 				session_destroy(cur->sess);
 
 			free(cur);
@@ -143,7 +123,6 @@ int store_delete(store_t *st, const char *id, session_t **out)
 		prev = cur;
 		cur = cur->next;
 	}
-
 	return (0);
 }
 
@@ -153,7 +132,8 @@ int store_delete(store_t *st, const char *id, session_t **out)
  */
 void store_destroy(store_t *st)
 {
-	node_t *cur, *next;
+	node_t *cur;
+	node_t *next;
 
 	if (!st)
 		return;
