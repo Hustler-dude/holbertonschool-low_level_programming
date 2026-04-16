@@ -32,29 +32,44 @@ static node_t *node_create(session_t *s)
 /**
  * store_add - inserts a session into the store
  * @st: target store
- * @s: session to insert (store takes ownership)
+ * @s: session to insert
  *
- * Return: 1 on success, 0 if duplicate id or allocation failure
+ * Ownership: store_add always takes ownership of @s.
+ * On success: the store owns @s and will free it on delete/destroy.
+ * On failure: store_add destroys @s so the caller never leaks it.
+ *
+ * Return: 1 on success, 0 if duplicate id, bad input, or allocation failure
  */
 int store_add(store_t *st, session_t *s)
 {
 	node_t *n, *cur;
 
 	if (!st || !s || !s->id)
+	{
+		session_destroy(s);
 		return (0);
+	}
 
 	cur = st->head;
 	while (cur)
 	{
 		if (cur->sess && cur->sess->id &&
 			strcmp(cur->sess->id, s->id) == 0)
+		{
+			/* Duplicate: caller cannot store this session — destroy it */
+			session_destroy(s);
 			return (0);
+		}
 		cur = cur->next;
 	}
 
 	n = node_create(s);
 	if (!n)
+	{
+		/* Node allocation failed — destroy session to avoid orphan */
+		session_destroy(s);
 		return (0);
+	}
 
 	n->next = st->head;
 	st->head = n;
