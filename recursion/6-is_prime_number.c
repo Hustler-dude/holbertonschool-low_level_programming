@@ -7,7 +7,7 @@
  *
  * Return: 1 if no divisor found up to sqrt(n), 0 otherwise
  */
-static int prime_helper(int n, int i)
+int prime_helper(int n, int i)
 {
 	if (i * i > n)
 		return (1);
